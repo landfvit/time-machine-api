@@ -1,6 +1,6 @@
 # TimeMachineAPI
 
-A local Python API for recording JSON changes, inspecting past state, and comparing alternative histories. Built with FastAPI, SQLite, and plain JavaScript, it includes a bicycle workshop for deliveries, builds, returns, and inventory corrections.
+A local Python API for recording JSON changes, inspecting past state, and comparing alternative histories. Built with FastAPI, SQLite, and plain JavaScript, it includes a bicycle workshop for deliveries, builds, returns, and inventory corrections as an example of use.
 
 ## Run locally
 
