@@ -1,0 +1,16 @@
+{
+  "name": "Workshop inventory",
+  "initial_state": {
+    "stock": {"frames": 20, "wheels": 40},
+    "orders": {"built": 0},
+    "notes": []
+  },
+  "events": [
+    {"label": "Frames delivered", "operations": [{"op": "increment", "path": "/stock/frames", "value": 10}]},
+    {"label": "Wheels delivered", "operations": [{"op": "increment", "path": "/stock/wheels", "value": 20}]},
+    {"label": "Build six bicycles", "operations": [{"op": "increment", "path": "/stock/frames", "value": -6}, {"op": "increment", "path": "/stock/wheels", "value": -12}, {"op": "increment", "path": "/orders/built", "value": 6}]},
+    {"label": "Return damaged frames", "operations": [{"op": "increment", "path": "/stock/frames", "value": -2}]},
+    {"label": "Build four bicycles", "operations": [{"op": "increment", "path": "/stock/frames", "value": -4}, {"op": "increment", "path": "/stock/wheels", "value": -8}, {"op": "increment", "path": "/orders/built", "value": 4}]},
+    {"label": "Log stock check", "operations": [{"op": "add", "path": "/notes/-", "value": "Stock counted after the second build."}]}
+  ]
+}

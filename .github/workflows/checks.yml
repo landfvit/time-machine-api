@@ -1,0 +1,16 @@
+name: API checks
+
+on: [push, pull_request]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          enable-cache: true
+      - run: uv sync --locked --extra dev
+      - run: uv run --extra dev pytest -q
+      - run: node --check static/app.js
+      - run: node --check static/workshop.js

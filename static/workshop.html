@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>Workshop - TimeMachineAPI</title>
+    <link rel="stylesheet" href="/static/workshop.css">
+    <script src="/static/workshop.js" defer></script>
+  </head>
+  <body>
+    <header class="app-bar">
+      <h1>Workshop</h1>
+      <div class="app-actions">
+        <form id="key-form" hidden><input id="api-key" type="password" autocomplete="off" aria-label="API key" placeholder="API key"><button type="submit">Connect</button></form>
+        <button id="sample-button" type="button" title="Load the workshop example">Sample</button>
+        <button id="refresh-button" type="button" title="Refresh the current workshop">Refresh</button>
+        <a href="/">API workbench ↗</a>
+        <a href="/docs" target="_blank" rel="noopener">API docs ↗</a>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="pane history-pane" aria-label="Workshop history">
+        <div class="pane-heading"><h2>History</h2><span id="timeline-count" class="quiet"></span></div>
+        <div class="timeline-picker"><label for="timeline-select" class="visually-hidden">Workshop timeline</label><select id="timeline-select"><option value="">No timelines</option></select><button id="more-timelines" type="button" hidden>More</button></div>
+        <details id="new-workshop" class="new-workshop"><summary>New workshop</summary><form id="create-form" class="stack"><label>Name<input id="create-name" maxlength="120" placeholder="Workshop" required></label><button type="submit">Create workshop</button><p class="quiet">20 frames, 40 wheels, 0 built</p></form></details>
+        <p id="parent-info" class="parent-info quiet" hidden></p>
+        <div id="event-list" class="event-list" role="list" aria-label="Recorded workshop events"></div>
+        <button id="earlier-events" class="earlier-events" type="button" hidden>Load earlier events</button>
+        <form id="fork-form" class="fork-form"><label id="fork-label" for="fork-name">Fork version 0</label><div class="input-row"><input id="fork-name" maxlength="120" placeholder="New timeline name" required><button id="fork-button" type="submit" title="Create an independent workshop from this version">Fork</button></div></form>
+      </section>
+
+      <section class="main-pane" aria-label="Workshop inventory">
+        <div class="pane inventory-pane">
+          <div class="pane-heading"><h2 id="workshop-name">Inventory</h2><span id="view-label" class="quiet">No workshop selected</span></div>
+          <div class="stock-cards">
+            <div class="stock-card"><span>Frames</span><strong id="stock-frames">—</strong></div>
+            <div class="stock-card"><span>Wheels</span><strong id="stock-wheels">—</strong></div>
+            <div class="stock-card"><span>Bicycles built</span><strong id="stock-built">—</strong></div>
+          </div>
+          <div class="history-controls"><button id="previous-button" type="button" title="Previous version" aria-label="Previous version">←</button><label class="version-label">Version<input id="version-input" type="number" min="0" max="0" value="0"></label><span id="head-label" class="quiet">/ 0</span><button id="next-button" type="button" title="Next version" aria-label="Next version">→</button><input id="version-slider" type="range" min="0" max="0" value="0" aria-label="Navigate workshop history"><button id="latest-button" type="button">Latest</button></div>
+          <div class="state-footer"><span id="state-time"></span><span id="state-note"></span></div>
+        </div>
+
+        <section class="pane tools-pane" aria-label="Workshop actions">
+          <div class="tabs" role="tablist" aria-label="Workshop tools"><button id="action-tab" type="button" role="tab" aria-selected="true" aria-controls="action-panel">Actions</button><button id="delivery-tab" type="button" role="tab" aria-selected="false" aria-controls="delivery-panel" tabindex="-1">Change delivery</button><button id="merge-tab" type="button" role="tab" aria-selected="false" aria-controls="merge-panel" tabindex="-1">Merge</button></div>
+
+          <div id="action-panel" class="tool-panel" role="tabpanel" aria-labelledby="action-tab">
+            <p id="action-target" class="quiet">Select a workshop</p>
+            <form id="action-form" class="business-form"><label>Action<select id="action-kind"><option value="delivery">Receive delivery</option><option value="build">Build bicycles</option><option value="return">Return stock</option></select></label><label id="action-item-label">Item<select id="action-item"><option value="frames">Frames</option><option value="wheels">Wheels</option></select></label><label>Quantity<input id="action-quantity" type="number" min="1" step="1" value="1" inputmode="numeric" required></label><button id="action-button" type="submit">Record delivery</button></form>
+            <p id="action-hint" class="quiet">A delivery adds stock.</p>
+          </div>
+
+          <div id="delivery-panel" class="tool-panel" role="tabpanel" aria-labelledby="delivery-tab" hidden>
+            <p id="delivery-target" class="quiet">Select a delivery in history.</p>
+            <form id="delivery-form" class="business-form"><label>New timeline<input id="delivery-name" maxlength="120" placeholder="Larger delivery" required></label><label>Delivery quantity<input id="delivery-quantity" type="number" min="1" step="1" inputmode="numeric" required></label><button id="delivery-button" type="submit">Change and replay</button></form>
+            <p class="quiet">Creates a new workshop and replays later events.</p>
+          </div>
+
+          <div id="merge-panel" class="tool-panel merge-panel" role="tabpanel" aria-labelledby="merge-tab" hidden>
+            <form id="merge-preview-form" class="merge-form"><label class="source-label">Incoming timeline<select id="merge-source"><option value="">Choose timeline</option></select></label><label>Version<input id="merge-source-version" type="number" min="0" max="0" value="0"></label><button id="merge-preview-button" type="submit">Preview merge</button></form>
+            <p id="merge-target" class="quiet">Merge into the latest version of this workshop.</p>
+            <div id="merge-preview" class="merge-preview" hidden>
+              <div class="merge-names"><span id="merge-current-name"></span><span id="merge-incoming-name"></span></div>
+              <div class="merge-table-wrap"><table class="merge-table"><thead><tr><th scope="col"></th><th scope="col">Current</th><th scope="col">Incoming</th><th scope="col">Result</th></tr></thead><tbody id="merge-stock"></tbody></table></div>
+              <div id="merge-conflicts" class="merge-conflicts"></div>
+              <div class="merge-footer"><span id="merge-summary" class="quiet"></span><button id="merge-apply-button" type="button">Apply merge</button></div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+    <footer class="status-bar"><span id="status" role="status" aria-live="polite">Connecting…</span><button id="retry-refresh" type="button" hidden>Refresh latest</button></footer>
+  </body>
+</html>

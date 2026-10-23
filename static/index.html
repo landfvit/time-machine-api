@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>TimeMachineAPI</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <header class="app-bar">
+      <h1>TimeMachineAPI</h1>
+      <div class="app-actions">
+        <form id="key-form" hidden>
+          <input id="api-key" type="password" autocomplete="off" placeholder="API key" aria-label="API key">
+          <button type="submit" title="Use API key">Connect</button>
+        </form>
+        <button id="sample-button" type="button" title="Create a workshop inventory example">Sample</button>
+        <button id="refresh-button" type="button" title="Refresh timelines and the selected state">Refresh</button>
+        <a href="/workshop" title="Use the inventory app powered by this API">Workshop ↗</a>
+        <a href="/docs" target="_blank" rel="noopener" title="Open interactive API documentation">API docs ↗</a>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="pane history-pane" aria-label="Timeline history">
+        <div class="pane-heading"><h2>History</h2><span id="timeline-count" class="quiet"></span></div>
+        <div class="timeline-picker">
+          <label for="timeline-select" class="visually-hidden">Timeline</label>
+          <select id="timeline-select"><option value="">No timelines</option></select>
+          <button id="more-timelines" type="button" hidden title="Load more timelines">More</button>
+        </div>
+        <p id="parent-info" class="metadata" hidden></p>
+        <details class="new-timeline">
+          <summary>New timeline</summary>
+          <form id="create-form" class="stack">
+            <label>Name<input id="create-name" maxlength="120" placeholder="Workshop inventory" required></label>
+            <label>Initial state<textarea id="initial-state" rows="5" spellcheck="false" aria-label="Initial state JSON">{
+  "stock": { "frames": 20, "wheels": 40 },
+  "orders": { "built": 0 },
+  "notes": []
+}</textarea></label>
+            <button type="submit">Create timeline</button>
+          </form>
+        </details>
+        <div id="event-list" class="event-list" role="list" aria-label="Events"></div>
+        <button id="earlier-events" class="earlier-events" type="button" hidden>Load earlier events</button>
+        <form id="fork-form" class="fork-form">
+          <label for="fork-name" id="fork-label">Fork version 0</label>
+          <div class="input-row"><input id="fork-name" placeholder="New timeline name" maxlength="120" required><button id="fork-button" type="submit" title="Copy this history into an independent timeline">Fork</button></div>
+        </form>
+      </section>
+
+      <section class="pane state-pane" aria-label="Reconstructed state">
+        <div class="pane-heading"><h2>State</h2><button id="export-button" type="button" title="Download this version as JSON">Download JSON ↓</button></div>
+        <div class="version-controls">
+          <button id="previous-button" type="button" title="Previous version" aria-label="Previous version">←</button>
+          <label class="version-label">Version <input id="version-input" type="number" min="0" max="0" value="0" aria-label="State version"></label>
+          <span id="head-label" class="quiet">/ 0</span>
+          <button id="next-button" type="button" title="Next version" aria-label="Next version">→</button>
+          <button id="head-button" type="button" title="Show the latest state">Latest</button>
+        </div>
+        <div class="slider-row"><input id="version-slider" type="range" min="0" max="0" value="0" aria-label="Navigate state history"></div>
+        <form id="time-form" class="time-form">
+          <label for="state-time" class="visually-hidden">State at local time</label>
+          <input id="state-time" type="datetime-local" step="0.001" aria-label="State at local time" title="Local time">
+          <button type="submit" title="Reconstruct the latest state at or before this time">At time</button>
+        </form>
+        <pre id="state-json" class="state-json" tabindex="0" aria-label="State JSON">{}</pre>
+        <div class="state-footer"><span id="state-timestamp" title="Recorded time in UTC"></span><span id="state-hash" title="SHA-256 state hash"></span></div>
+      </section>
+
+      <section class="pane change-pane" aria-label="Events and comparisons">
+        <div class="tabs" role="tablist" aria-label="Timeline tools">
+          <button id="event-tab" type="button" role="tab" aria-selected="true" aria-controls="event-panel" tabindex="0">Event</button>
+          <button id="experiment-tab" type="button" role="tab" aria-selected="false" aria-controls="experiment-panel" tabindex="-1">Experiment</button>
+          <button id="compare-tab" type="button" role="tab" aria-selected="false" aria-controls="compare-panel" tabindex="-1">Compare</button>
+          <button id="merge-tab" type="button" role="tab" aria-selected="false" aria-controls="merge-panel" tabindex="-1">Merge</button>
+        </div>
+
+        <div id="event-panel" class="tool-panel" role="tabpanel" aria-labelledby="event-tab">
+          <p id="append-target" class="metadata">Append to version 0</p>
+          <form id="event-form" class="stack grow">
+            <label>Label<input id="event-label" maxlength="120" placeholder="Restock frames" required></label>
+            <label class="grow">Operations<textarea id="event-operations" class="operations" spellcheck="false" aria-label="Event operations JSON">[
+  {
+    "op": "increment",
+    "path": "/stock/frames",
+    "value": 10
+  }
+]</textarea></label>
+            <div class="operation-hint"><span title="JSON Patch operations">add, remove, replace, move, copy, test</span><span title="Add a number to an existing numeric value">increment</span></div>
+            <button id="append-button" type="submit">Append event</button>
+          </form>
+        </div>
+
+        <div id="experiment-panel" class="tool-panel" role="tabpanel" aria-labelledby="experiment-tab" hidden>
+          <p id="experiment-target" class="metadata">Select an event in history</p>
+          <form id="experiment-form" class="stack grow">
+            <label>New timeline<input id="experiment-name" maxlength="120" placeholder="More frames" required></label>
+            <label>Event label<input id="experiment-label" maxlength="120" required></label>
+            <label class="grow">Replacement operations<textarea id="experiment-operations" class="operations" spellcheck="false" aria-label="Replacement event operations JSON">[]</textarea></label>
+            <p class="metadata experiment-note">Creates a new timeline and replays later events.</p>
+            <button id="experiment-button" type="submit">Create experiment</button>
+          </form>
+        </div>
+
+        <div id="compare-panel" class="tool-panel" role="tabpanel" aria-labelledby="compare-tab" hidden>
+          <form id="compare-form" class="stack">
+            <p id="compare-source" class="metadata">Compare selected state with</p>
+            <label>Timeline<select id="compare-timeline"><option value="">No timelines</option></select></label>
+            <div class="input-row"><label class="grow">Version<input id="compare-version" type="number" min="0" max="0" value="0"></label><button type="submit" id="compare-button">Compare</button></div>
+          </form>
+          <div id="compare-results" class="compare-results" hidden>
+            <div class="result-heading"><h3>Differences</h3><span id="change-count" class="quiet"></span></div>
+            <pre id="compare-changes" class="compare-changes" tabindex="0" aria-label="Differences as JSON Patch"></pre>
+            <div class="result-heading"><h3 id="compare-state-label">Other state</h3></div>
+            <pre id="compare-state" class="compare-state" tabindex="0" aria-label="Compared state JSON"></pre>
+          </div>
+        </div>
+
+        <div id="merge-panel" class="tool-panel" role="tabpanel" aria-labelledby="merge-tab" hidden>
+          <p id="merge-target" class="metadata">Select the latest version to merge.</p>
+          <form id="merge-preview-form" class="stack">
+            <label>Incoming timeline<select id="merge-source"><option value="">No other timelines</option></select></label>
+            <button id="merge-preview-button" type="submit">Preview merge</button>
+          </form>
+          <form id="merge-apply-form" class="stack" hidden>
+            <p id="merge-base" class="metadata"></p>
+            <div id="merge-conflicts" class="merge-conflicts"></div>
+            <pre id="merge-state" class="compare-state" tabindex="0" aria-label="Merged state preview" hidden></pre>
+            <button id="merge-apply-button" type="submit">Merge into selected timeline</button>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="status-bar"><span id="status" role="status" aria-live="polite">Connecting…</span><button id="conflict-refresh" type="button" hidden>Refresh latest</button></footer>
+  </body>
+</html>
